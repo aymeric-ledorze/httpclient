@@ -1381,6 +1381,15 @@ EOS
     assert_equal('hello', @client.post(serverurl + 'sleep', :sec => 2).content)
   end
 
+  def test_get_async_receive_timeout
+    @client.receive_timeout = 1
+    @client.reset_all
+    assert_equal("", @client.get_async(serverurl + 'body_sleep').pop.content.read)
+    @client.receive_timeout = 3
+    @client.reset_all
+    assert_equal("hello", @client.get_async(serverurl + 'body_sleep').pop.content.read)
+  end
+
   def test_reset
     url = serverurl + 'servlet'
     assert_nothing_raised do
@@ -1946,7 +1955,7 @@ private
     [
       :hello, :sleep, :servlet_redirect, :redirect1, :redirect2, :redirect3,
       :redirect_self, :relative_redirect, :redirect_see_other, :chunked,
-      :largebody, :status, :compressed, :charset, :continue
+      :largebody, :status, :compressed, :charset, :continue, :body_sleep
     ].each do |sym|
       @server.mount(
         "/#{sym}",
@@ -2053,6 +2062,15 @@ private
   def do_continue(req, res)
     req.continue
     res.body = 'done!'
+  end
+
+  def do_body_sleep(req, res)
+    res['content-type'] = 'text/html'
+    res.body = "hello"
+    def res.send_body(socket)
+      sleep 2
+      super
+    end
   end
 
   class TestServlet < WEBrick::HTTPServlet::AbstractServlet

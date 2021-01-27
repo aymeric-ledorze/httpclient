@@ -1297,6 +1297,8 @@ private
     }
     # ignore commands (not retryable in async mode)
     res
+  ensure
+    pipew.close unless pipew.closed?
   end
 
   def do_get_header(req, res, sess)
